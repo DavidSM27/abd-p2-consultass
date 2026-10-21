@@ -29,7 +29,24 @@ otra fecha), así que para contar eventos hay que usar `_id`.
 # Devuelve, por cada género: genero, n (número de artistas) y artistas (lista
 # de nombres, ORDENADA). Ordenado por n descendente y, a igualdad, por genero.
 C1 = [
-    # TODO
+    {"$sort": {"nombre": 1}},
+    {"$unwind": "$generos"},
+    {
+        "$group": {
+            "_id": "$generos",
+            "n": {"$sum":1},
+            "artistas": {"$push", "$nombre"}
+        }
+    },
+    {
+        "$project": {
+            "_id": 0,
+            "genero": "$_id",
+            "n": 1,
+            "artistas": 1
+        }
+    },
+    {"$sort": {"n": -1, "genero": 1}}
 ]
 
 # ── C2 · Ocupación media por recinto ────────────────────────────────────────
