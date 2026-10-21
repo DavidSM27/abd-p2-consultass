@@ -55,7 +55,31 @@ C1 = [
 # en PORCENTAJE del aforo del recinto y redondeada a un decimal. Ordenado por
 # ocupacion_media descendente y, a igualdad, por recinto.
 C2 = [
-    # TODO
+    {
+        "$lookup": {
+            "from": "recinto",
+            "localField": "recinto",
+            "foreignField": "nombre",
+            "as": "datos_recinto",
+        }
+    },
+    {"$unwind": "$datos_recinto"},
+    {
+        "$group": {
+            "_id": "$recinto",
+            "eventos": {"$sum": 1},
+            "ocupacion_media_ratio": {"$avg": {"$divide": ["$entradas_vendidas", "$datos_recinto.aforo"]}}
+        }
+    },
+    {
+        "$project": {
+            "_id": 0,
+            "recinto": "$_id",
+            "eventos": 1,
+            "ocupacion_media": {"$round": [{"$multiply": ["$ocupacion_media_ratio", 100]}, 1]},
+        }
+    },
+    {"$sort": {"ocupacion_media": -1, "recinto": 1}}
 ]
 
 # ── C3 · Ingresos por mes ───────────────────────────────────────────────────
