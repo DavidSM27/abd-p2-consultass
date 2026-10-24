@@ -88,7 +88,27 @@ C2 = [
 # Devuelve, por cada mes: mes (formato "AAAA-MM"), ingresos redondeados a dos
 # decimales y eventos (número de eventos de ese mes). Ordenado por mes.
 C3 = [
-    # TODO
+    {"$unwind": "$precios_por_zona"},
+    {"$addFields": {
+        "ingreso_por_zona": {"$multiply": ["$precios_por_zona.precio", "$precios_por_zona.vendidas"]}
+    }},
+    {"$group": {
+        "_id": "$_id",
+        "ingresos_totales": {"$sum": "$ingreso_por_zona"},
+        "mes": {"$first": {"$dateToString": {"format": "%Y-%m", "date": "$fecha"}}},
+    }},
+    {"$group": {
+        "_id": "$mes",
+        "ingresos": {"$sum": "$ingresos_totales"},
+        "eventos": {"$sum": 1},
+    }},
+    {"$project": {
+        "_id": 0,
+        "mes": "$_id",
+        "ingresos": {"$round": ["$ingresos", 2]},
+        "eventos": 1,
+    }},
+    {"$sort": {"mes": 1}},
 ]
 
 # ── C4 · Los tres artistas más programados ──────────────────────────────────
@@ -97,7 +117,20 @@ C3 = [
 # recintos (número de recintos DISTINTOS en los que ha actuado). Ordenado por
 # actuaciones descendente y, a igualdad, por artista.
 C4 = [
-    # TODO
+    {"$unwind": "$artistas"},
+    {"$group": {
+        "_id": "$artistas",
+        "actuaciones": {"$sum": 1},
+        "recintos": {"$addToSet": "$recinto"},
+    }},
+    {"$project": {
+        "_id": 0,
+        "artista": "$_id",
+        "actuaciones": 1,
+        "recintos": {"$size": "$recintos"},
+    }},
+    {"$sort": {"actuaciones": -1, "artista": 1}},
+    {"$limit": 3},
 ]
 
 # ── C5 · Recintos a menos de 5 km de la Puerta del Sol ──────────────────────
