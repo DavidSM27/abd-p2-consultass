@@ -139,7 +139,25 @@ C4 = [
 # Devuelve, por cada recinto: recinto, ciudad, distancia_km redondeada a dos
 # decimales, y eventos (número de eventos de ese recinto).
 C5 = [
-    # TODO
+    {"$geoNear": {
+        "near": {"type": "Point", "coordinates": [-3.7038, 40.4168]},
+        "distanceField": "distancia",
+        "maxDistance": 5000,
+        "spherical": True,
+    }},
+    {"$lookup": {
+        "from": "evento",
+        "localField": "nombre",
+        "foreignField": "recinto",
+        "as": "datos_evento",
+    }},
+    {"$project": {
+        "_id": 0,
+        "recinto": "$nombre",
+        "ciudad": 1,
+        "distancia_km": {"$round": [{"$divide": ["$distancia", 1000]}, 2]},
+        "eventos": {"$size": "$datos_evento"},
+    }},
 ]
 
 # ── C6 · Cartel completo de los eventos con varios artistas ─────────────────
@@ -148,7 +166,24 @@ C5 = [
 # una lista con {nombre, pais, generos} de cada artista, ORDENADA por nombre.
 # Ordenado por titulo.
 C6 = [
-    # TODO
+    {"$match": {"$expr": {"$gt": [{"$size": "$artistas"}, 1]}}},
+    {"$lookup": {
+        "from": "artista",
+        "localField": "artistas",
+        "foreignField": "nombre",
+        "as": "datos_artista",
+        "pipeline": [
+            {"$sort": {"nombre": 1}},
+            {"$project": {"_id": 0, "nombre": 1, "pais": 1, "generos": 1}},
+        ],
+    }},
+    {"$project": {
+        "_id": 0,
+        "titulo": 1,
+        "recinto": 1,
+        "cartel": "$datos_artista",
+    }},
+    {"$sort": {"titulo": 1}},
 ]
 
 # ── C7 · Eventos por franja de ocupación ────────────────────────────────────
